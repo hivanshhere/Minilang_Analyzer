@@ -63,7 +63,7 @@ public class MiniLangIDE extends JFrame {
         UIManager.put("Label.font", new Font("Segoe UI", Font.PLAIN, 13));
         UIManager.put("Button.font", new Font("Segoe UI", Font.BOLD, 12));
         UIManager.put("TabbedPane.font", new Font("Segoe UI", Font.BOLD, 12));
-        UIManager.put("TabbedPane.selectedForeground", accentBlue);
+        UIManager.put("TabbedPane.selectedForeground", Color.WHITE);
         UIManager.put("TableHeader.font", new Font("Segoe UI", Font.BOLD, 13));
         setupUI();
         applyTheme();
@@ -83,11 +83,16 @@ public class MiniLangIDE extends JFrame {
 
         toolbar = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 8));
         toolbar.setBorder(new EmptyBorder(2, 8, 8, 8));
-        JButton btnOpen = createToolbarButton("\uD83D\uDCC2 Open", null, null);
-        JButton btnSave = createToolbarButton("\uD83D\uDCBE Save", null, null);
-        JButton btnCompile = createToolbarButton("▶ Compile & Run", new Color(60, 140, 255), Color.WHITE);
-        JButton btnClear = createToolbarButton("\uD83D\uDDD1 Clear", null, null);
-        JButton btnTheme = createToolbarButton("\uD83C\uDF13 Theme", null, null);
+        JButton btnOpen = createToolbarButton("Open File", null, null);
+        JButton btnSave = createToolbarButton("Save", null, null);
+        JButton btnCompile = createToolbarButton("Compile & Run", new Color(50, 120, 235), Color.WHITE);
+        JButton btnClear = createToolbarButton("Clear Output", null, null);
+        JButton btnTheme = createToolbarButton("Toggle Theme", null, null);
+        btnOpen.setToolTipText("Open a MiniLang source file");
+        btnSave.setToolTipText("Save source code (Ctrl+S)");
+        btnCompile.setToolTipText("Analyze the current program (Ctrl+R)");
+        btnClear.setToolTipText("Clear all compiler results");
+        btnTheme.setToolTipText("Switch between dark and light themes");
 
         btnOpen.addActionListener(e -> openFile());
         btnSave.addActionListener(e -> saveFile());
@@ -133,7 +138,7 @@ public class MiniLangIDE extends JFrame {
         editorScroll.setRowHeaderView(lineNumbers);
         editorScroll.setBorder(null);
         JPanel leftPanel = new JPanel(new BorderLayout());
-        JLabel fileLabel = new JLabel("  \uD83D\uDCDD Code Editor");
+        JLabel fileLabel = new JLabel("  SOURCE EDITOR");
         fileLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
         fileLabel.setForeground(accentBlue);
         fileLabel.setBorder(new EmptyBorder(6, 4, 6, 0));
@@ -148,40 +153,40 @@ public class MiniLangIDE extends JFrame {
         outputArea = new JTextPane();
         outputArea.setFont(new Font("Consolas", Font.PLAIN, 14));
         outputArea.setEditable(false);
-        outputTabs.addTab("\uD83D\uDCE4 Output", new JScrollPane(outputArea));
+        outputTabs.addTab("Output", new JScrollPane(outputArea));
 
         // Tab 2: Tokens TABLE
         tokenTableModel = createTableModel(new String[] { "#", "Token Type", "Lexeme", "Category" });
         tokenTable = createStyledTable(tokenTableModel);
-        outputTabs.addTab("\uD83C\uDFF7 Tokens", new JScrollPane(tokenTable));
+        outputTabs.addTab("Tokens", new JScrollPane(tokenTable));
 
         // Tab 3: Lexical Summary TABLE
         lexSummaryModel = createTableModel(new String[] { "Category", "Count", "Details" });
         lexSummaryTable = createStyledTable(lexSummaryModel);
-        outputTabs.addTab("\uD83D\uDCCA Lexical Summary", new JScrollPane(lexSummaryTable));
+        outputTabs.addTab("Lexical Summary", new JScrollPane(lexSummaryTable));
 
         // Tab 4: Parse Tree
         graphTreePanel = new GraphicalTreePanel();
-        outputTabs.addTab("\uD83C\uDF33 Parse Tree", graphTreePanel);
+        outputTabs.addTab("Parse Tree", graphTreePanel);
 
         // Tab 5: Symbol Table
         symbolTableModel = createTableModel(new String[] { "#", "Name", "Type", "Custom Type", "Scope" });
         symbolTable = createStyledTable(symbolTableModel);
-        outputTabs.addTab("\uD83D\uDCCB Symbol Table", new JScrollPane(symbolTable));
+        outputTabs.addTab("Symbols", new JScrollPane(symbolTable));
 
         // Tab 6: TAC TABLE
         tacTableModel = createTableModel(new String[] { "Line", "Instruction", "Type" });
         tacTable = createStyledTable(tacTableModel);
-        outputTabs.addTab("\u2699 TAC", new JScrollPane(tacTable));
+        outputTabs.addTab("TAC", new JScrollPane(tacTable));
 
         // Tab 7: Grammar Reference TABLE
         grammarTableModel = createTableModel(new String[] { "#", "Production Rule", "Description" });
         grammarTable = createStyledTable(grammarTableModel);
         populateGrammar();
-        outputTabs.addTab("\uD83D\uDCD6 Grammar", new JScrollPane(grammarTable));
+        outputTabs.addTab("Grammar", new JScrollPane(grammarTable));
 
         JPanel rightPanel = new JPanel(new BorderLayout());
-        JLabel outLabel = new JLabel("  ⚙ Compiler Output Phases");
+        JLabel outLabel = new JLabel("  COMPILER RESULTS");
         outLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
         outLabel.setForeground(accentPurple);
         outLabel.setBorder(new EmptyBorder(6, 4, 6, 0));
@@ -205,7 +210,7 @@ public class MiniLangIDE extends JFrame {
         String[] phases = { "Lexer", "Parser", "Semantic", "TAC" };
         phaseLabels = new JLabel[phases.length];
         for (int i = 0; i < phases.length; i++) {
-            phaseLabels[i] = new JLabel("● " + phases[i]);
+            phaseLabels[i] = new JLabel(phases[i]);
             phaseLabels[i].setFont(new Font("Segoe UI", Font.BOLD, 11));
             phaseLabels[i].setForeground(Color.GRAY);
             phasePanel.add(phaseLabels[i]);
@@ -433,10 +438,47 @@ public class MiniLangIDE extends JFrame {
             }
         }
         outputTabs.setBackground(navBg);
-        outputTabs.setForeground(fg); // Tab text color
+        styleOutputTabs(navBg, isDarkTheme ? new Color(50, 75, 125) : new Color(210, 225, 255), fg);
 
         // Deep recursive theming for scroll panes, viewports, and split panes
         setRecursiveTheme(getContentPane(), bg, navBg);
+    }
+
+    private void styleOutputTabs(Color tabBg, Color selectedTabBg, Color textColor) {
+        outputTabs.setOpaque(true);
+        outputTabs.setBackground(tabBg);
+        outputTabs.setForeground(textColor);
+        for (int i = 0; i < outputTabs.getTabCount(); i++) {
+            outputTabs.setBackgroundAt(i, i == outputTabs.getSelectedIndex() ? selectedTabBg : tabBg);
+            outputTabs.setForegroundAt(i, i == outputTabs.getSelectedIndex() ? Color.WHITE : textColor);
+        }
+
+        outputTabs.setUI(new javax.swing.plaf.basic.BasicTabbedPaneUI() {
+            @Override
+            protected void paintTabBackground(Graphics g, int tabPlacement, int tabIndex,
+                    int x, int y, int w, int h, boolean isSelected) {
+                g.setColor(isSelected ? selectedTabBg : tabBg);
+                g.fillRect(x, y, w, h);
+            }
+
+            @Override
+            protected void paintTabBorder(Graphics g, int tabPlacement, int tabIndex,
+                    int x, int y, int w, int h, boolean isSelected) {
+                g.setColor(isSelected ? accentBlue : new Color(tabBg.getRed() + (isDarkTheme ? 15 : -15),
+                        tabBg.getGreen() + (isDarkTheme ? 15 : -15), tabBg.getBlue() + (isDarkTheme ? 15 : -15)));
+                g.drawLine(x, y + h - 1, x + w - 1, y + h - 1);
+            }
+
+            @Override
+            protected void paintContentBorder(Graphics g, int tabPlacement, int selectedIndex) {
+                g.setColor(accentBlue);
+                if (outputTabs.getTabCount() > 0) {
+                    Rectangle firstTab = outputTabs.getBoundsAt(0);
+                    int borderY = firstTab.y + firstTab.height;
+                    g.drawLine(0, borderY, outputTabs.getWidth(), borderY);
+                }
+            }
+        });
     }
 
     private void setRecursiveTheme(Component c, Color bg, Color navBg) {
