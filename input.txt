@@ -1,0 +1,4 @@
+ank a;
+suno a;
+a = a + 10;
+bol a;
