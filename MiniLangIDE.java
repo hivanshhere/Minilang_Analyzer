@@ -10,6 +10,7 @@ import javax.swing.text.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -672,8 +673,8 @@ public class MiniLangIDE extends JFrame {
                     return;
                 }
 
-                BufferedReader stdInput = new BufferedReader(new InputStreamReader(p.getInputStream()));
-                BufferedReader stdError = new BufferedReader(new InputStreamReader(p.getErrorStream()));
+                BufferedReader stdInput = new BufferedReader(new InputStreamReader(p.getInputStream(), StandardCharsets.UTF_8));
+                BufferedReader stdError = new BufferedReader(new InputStreamReader(p.getErrorStream(), StandardCharsets.UTF_8));
                 StringBuilder stdoutBuf = new StringBuilder();
                 StringBuilder stderrBuf = new StringBuilder();
                 String s;
@@ -1152,17 +1153,25 @@ public class MiniLangIDE extends JFrame {
         }
 
         private int calcDepth(String line) {
-            int pos = 0;
-            for (int i = 0; i < line.length(); i++) {
-                char c = line.charAt(i);
-                if (c == '\u2502' || c == '\u251C' || c == '\u2514' || c == '\u2500' || c == ' ') pos++;
-                else break;
-            }
+            int pos = indentationEnd(line);
+            if (line.startsWith("|-- ", pos) || line.startsWith("`-- ", pos)) return pos / 4 + 1;
             return pos / 4;
         }
 
         private String extractLabel(String line) {
-            return line.replaceAll("^[\u2502\u251C\u2514\u2500\\s]+", "").trim();
+            int pos = indentationEnd(line);
+            if (line.startsWith("|-- ", pos) || line.startsWith("`-- ", pos)) pos += 4;
+            return line.substring(pos).trim();
+        }
+
+        private int indentationEnd(String line) {
+            int pos = 0;
+            while (pos + 4 <= line.length()) {
+                String segment = line.substring(pos, pos + 4);
+                if (!segment.equals("|   ") && !segment.equals("    ")) break;
+                pos += 4;
+            }
+            return pos;
         }
 
         // ---- Reingold-style layout (no overlap) ----

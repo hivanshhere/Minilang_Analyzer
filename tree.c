@@ -16,7 +16,7 @@ void printTreeUtil(Node *root, char *prefix, int isLast) {
     return;
 
   printf("%s", prefix);
-  printf(isLast ? "└── " : "├── ");
+  printf(isLast ? "`-- " : "|-- ");
 
   // Color logic for nodes
   if (strcmp(root->name, "Assignment") == 0 || strcmp(root->name, "Declaration") == 0)
@@ -34,7 +34,7 @@ void printTreeUtil(Node *root, char *prefix, int isLast) {
 
   char newPrefix[1024];
   strcpy(newPrefix, prefix);
-  strcat(newPrefix, isLast ? "    " : "│   ");
+  strcat(newPrefix, isLast ? "    " : "|   ");
 
   Node *child = root->child;
   while (child) {
